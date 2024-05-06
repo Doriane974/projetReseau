@@ -63,6 +63,7 @@ public class ClientWorker {
                             word = "QUIT\n";
                             out.write(word + "\n"); // send a message to the server
                             out.flush();
+                            quit = true;
                             break;
                     }
                     //serverWord = in.readLine(); // wait for the server to say

@@ -29,14 +29,14 @@ public class Serveur {
                 //in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                 String word = "";
 
-
+                boolean quit = false;
                 try { // after establishing a connection and recreating the socket for communication with the client, you can go
                     // to create I/O streams.
                     // now we can receive messages
                     out = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
                     out.write("WHO_ARE_YOU\n");
                     out.flush();;
-                    while(true) {
+                    while(!quit) {
                         in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                         // and send
                         out = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
@@ -83,6 +83,7 @@ public class Serveur {
                                 response = "NON!\n";
                                 out.write(response);
                                 out.flush(); // push everything out of the buffer
+                                quit = true;
                                 break;
                         }
                         word = in.readLine();
