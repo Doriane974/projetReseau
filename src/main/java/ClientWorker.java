@@ -1,6 +1,7 @@
 //Code JavaRush https://javarush.com/fr/groups/posts/fr.654.les-classes-socket-et-serversocket-ou--bonjour-serveur--pouvez-vous-mentendre
 import java.io.*;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 
 public class ClientWorker {
 
@@ -13,7 +14,38 @@ public class ClientWorker {
     public static String getPassword(){
         return "password1";
     }
+
+
+    //CODE AUQUEL REVENIR SI LE PROCHAIN TEST NE FONCTIONNE PAS
     public static void main(String[] args) {
+        try {
+            Socket socket = new Socket("localhost", 1337);
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+
+            String serverMessage;
+            while ((serverMessage = in.readLine()) != null) {
+                System.out.println("Server: " + serverMessage);
+                if (serverMessage.equalsIgnoreCase("quit")) {
+                    break;
+                }
+                BufferedReader userInput = new BufferedReader(new InputStreamReader(System.in));
+                System.out.print("Client: ");
+                String clientMessage = userInput.readLine();
+                out.println(clientMessage);
+                if (clientMessage.equalsIgnoreCase("quit")) {
+                    break;
+                }
+            }
+
+            socket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    /*CODE AVEC PROTOCOLE
+    public static void main(String[] args) {
+
         Boolean quit = false;
         try {
             try {
@@ -88,7 +120,7 @@ public class ClientWorker {
             System.err.println(e);
         }
 
-    }
+    }*/
 }
 //TODO : - Regler le probleme du message en trop cote client une fois quit écrit
 //       - regler l'affichage UTF8

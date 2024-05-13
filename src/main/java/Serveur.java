@@ -1,14 +1,16 @@
 //Code JavaRush https://javarush.com/fr/groups/posts/fr.654.les-classes-socket-et-serversocket-ou--bonjour-serveur--pouvez-vous-mentendre
 import java.io.*;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 
 public class Serveur {
 
-    private static Socket clientSocket; // socket for communication
-    private static ServerSocket server; // server socket
-    private static BufferedReader in; // socket read stream
-    private static BufferedWriter out; // socket write stream
+    //private static Socket clientSocket; // socket for communication
+    //private static ServerSocket server; // server socket
+    //private static BufferedReader in; // socket read stream
+    //private static BufferedWriter out; // socket write stream
     public static String getPassword(){
         return "password1";
     }
@@ -18,6 +20,57 @@ public class Serveur {
     }
 
     public static void main(String[] args) {
+        try {
+            ServerSocket serverSocket = new ServerSocket(1337);
+            System.out.println("Server started. Waiting for client...");
+
+            while (true) {
+                Socket clientSocket = serverSocket.accept();
+                System.out.println("Client connected: " + clientSocket);
+
+                BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+                PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
+
+                out.println("Welcome to the server! Type 'quit' to exit.");
+
+                String clientMessage;
+                while ((clientMessage = in.readLine()) != null) {
+                    System.out.println("Client: " + clientMessage);
+                    if (clientMessage.equalsIgnoreCase("quit")) {
+                        break;
+                    }
+                    switch(clientMessage){
+                        case "ITS_ME":
+                            out.println("GIMME_PASSWORD");
+                            break;
+                        case "READY":
+                            out.println("OK");
+                            break;
+                        case "PASSWD\\s\\w+\\s*": //PAS VALIDER !! NE RENTRE JAMAIS ICI !!!
+                            out.println("Server: You gave me a password, You said '" + clientMessage + "'. Type 'quit' to exit.");
+                            break;
+                        default :
+                            out.println("Server: You said '" + clientMessage + "'. Type 'quit' to exit.");
+                            break;
+                    }
+
+                    //out.println("Server: You said '" + clientMessage + "'. Type 'quit' to exit.");
+                }
+
+                System.out.println("Client disconnected: " + clientSocket);
+                clientSocket.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+
+
+    /*CODE AVEC PROTOCOLE
+    public static void main(String[] args) {
+
         try {
             try {
                 server = new ServerSocket(1337); // server socket listening on port 4004
@@ -104,7 +157,7 @@ public class Serveur {
         } catch (IOException e) {
             System.err.println(e);
         }
-    }
+    }*/
 }
 
 //Code COURS + DORIANE
