@@ -36,6 +36,13 @@ public class ClientWorker {
                     case "WHO_ARE_YOU":
                         out.println("ITS_ME");
                         break;
+                    case "PROGRESS":
+                        if(true) {//Faire la condition qui dit que ça teste
+                            out.println("TESTING");
+                        }else{
+                            out.println("NOPE");
+                        }
+                        break;
                     default :
                         BufferedReader userInput = new BufferedReader(new InputStreamReader(System.in));
                         System.out.print("Client: ");

@@ -39,6 +39,7 @@ public class Serveur {
                     if (clientMessage.equalsIgnoreCase("quit")) {
                         break;
                     }
+                    String serverMessage = "";// = userInput.readLine();
                     switch(clientMessage){
                         case "ITS_ME":
                             out.println("GIMME_PASSWORD");
@@ -76,7 +77,30 @@ public class Serveur {
                                 out.flush(); // push everything out of the buffer
                                 break;*/
                         default :
-                            out.println("Server: You said '" + clientMessage + "'. Type 'quit' to exit.");
+                            if(clientMessage.startsWith("PASSWD")){
+                                if(clientMessage.contains(getPassword())){ //A voir, puisque password1aoeuhfzrg marcherai aussi
+                                    out.println("HELLO_YOU");
+                                }
+                                else{
+                                    out.println("YOU_DONT_FOOL_ME");
+                                }
+                            }
+                            else if(clientMessage.startsWith("FOUND")){
+                                out.println("Verification...Cliquer sur entrer (sinon aie aie aie beug ! )");
+                                if(testHash("string", "nonce")){
+                                    out.println("SOLVED");
+                                }
+                                else{
+                                    out.println("ERROR");
+                                }
+                            }
+                            else{
+                                out.println("Server: You said '" + clientMessage + "'. Type 'quit' to exit.");
+//                                BufferedReader serverInput = new BufferedReader(new InputStreamReader(System.in));
+//                                System.out.print("Server: ");
+//                                serverMessage = serverInput.readLine();
+//                                out.println(serverMessage);
+                            }
                             break;
                     }
 
