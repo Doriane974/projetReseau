@@ -29,10 +29,20 @@ public class ClientWorker {
                 if (serverMessage.equalsIgnoreCase("quit")) {
                     break;
                 }
-                BufferedReader userInput = new BufferedReader(new InputStreamReader(System.in));
-                System.out.print("Client: ");
-                String clientMessage = userInput.readLine();
-                out.println(clientMessage);
+//                BufferedReader userInput = new BufferedReader(new InputStreamReader(System.in));
+//                System.out.print("Client: ");
+                String clientMessage = "";// = userInput.readLine();
+                switch (serverMessage){
+                    case "WHO_ARE_YOU":
+                        out.println("ITS_ME");
+                        break;
+                    default :
+                        BufferedReader userInput = new BufferedReader(new InputStreamReader(System.in));
+                        System.out.print("Client: ");
+                        clientMessage = userInput.readLine();
+                        out.println(clientMessage);
+                }
+
                 if (clientMessage.equalsIgnoreCase("quit")) {
                     break;
                 }

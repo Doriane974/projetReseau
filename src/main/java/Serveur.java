@@ -46,9 +46,35 @@ public class Serveur {
                         case "READY":
                             out.println("OK");
                             break;
+                        case "test_manuel":
+                            out.println("WHO_ARE_YOU");
+                            break;
                         case "PASSWD\\s\\w+\\s*": //PAS VALIDER !! NE RENTRE JAMAIS ICI !!!
                             out.println("Server: You gave me a password, You said '" + clientMessage + "'. Type 'quit' to exit.");
                             break;
+                            /*case "PASSWD\\s\\w+\n":
+                                String deuz = word.split("\\s+")[1];
+                                if(deuz.equals(getPassword())){
+                                    response = "HELLO_YOU\n";
+                                }
+                                else{
+                                    response = "YOU_DONT_FOOL_ME\n";
+                                }
+                                out.write(response);
+                                out.flush(); // push everything out of the buffer
+                                break;
+                            case "FOUND\\s\\w+\\s\\w+\n":
+                                String deuxieme = word.split("\\s+")[1];
+                                String troisieme = word.split("\\s+")[2];
+                                if(testHash(deuxieme,troisieme)){
+                                    response = "SOLVED\n";
+                                }
+                                else{
+                                    response = "ERROR\n";
+                                }
+                                out.write(response);
+                                out.flush(); // push everything out of the buffer
+                                break;*/
                         default :
                             out.println("Server: You said '" + clientMessage + "'. Type 'quit' to exit.");
                             break;
