@@ -13,50 +13,50 @@ public class Serveur {
     //private static BufferedReader in; // socket read stream
     //private static BufferedWriter out; // socket write stream
 
-    private String payload = "";
-    private int nonce = 0;
-    private int increment = 0;
-    private int difficulty = 0;
+    private static String payload = "";
+    private static int nonce = 0;
+    private static int increment = 0;
+    private static int difficulty = 0;
 
     public String getPayload() {
         return payload;
     }
 
-    public void setPayload(String payload) {
-        this.payload = payload;
+    public static void setPayload(String PayloadVal) {
+        payload = PayloadVal;
     }
 
     public int getNonce() {
         return nonce;
     }
 
-    public void setNonce(int nonce) {
-        this.nonce = nonce;
+    public static void setNonce(int nonceVal) {
+        nonce = nonceVal;
     }
 
     public int getIncrement() {
         return increment;
     }
 
-    public void setIncrement(int increment) {
-        this.increment = increment;
+    public static void setIncrement(int incrementVal) {
+        increment = incrementVal;
     }
 
     public int getDifficulty() {
         return difficulty;
     }
 
-    public void setDifficulty(int difficulty) {
-        this.difficulty = difficulty;
+    public static void setDifficulty(int difficultyVal) {
+        difficulty = difficultyVal;
     }
 
-    public void getWork() {
+    public static void getWork() {
         //données au hasard pour pouvoir tester le code.
         // partie de Olha et Oleksandra
-        setPayload("abc");
-        setNonce(23456);
-        setDifficulty(2);
-        setIncrement(1);
+        setPayload("def");
+        setNonce(78910);
+        setDifficulty(3);
+        setIncrement(2);
     }
 
     public static String getPassword() {
@@ -75,11 +75,10 @@ public class Serveur {
     }
 
     public static void main(String[] args) {
+        boolean phase2 = false;
         try {
         ServerSocket serverSocket = new ServerSocket(1337);
         System.out.println("Server started. Waiting for client...");
-
-
             while (true) {
                 Socket clientSocket = serverSocket.accept();
                 System.out.println("Client connected: " + clientSocket);
@@ -90,7 +89,7 @@ public class Serveur {
                     out.println("WHO_ARE_YOU_?");
 
                     String clientMessage;
-                    while ((clientMessage = in.readLine()) != null) {
+                    while (((clientMessage = in.readLine()) != null) && !phase2) {
                         System.out.println("Client: " + clientMessage);
                         if (clientMessage.equalsIgnoreCase("quit")) {
                             break;
@@ -102,10 +101,11 @@ public class Serveur {
                                 break;
                             case "READY":
                                 out.println("OK");
+                                phase2 = true;
                                 break;
-                            case "test_manuel":
-                                out.println("WHO_ARE_YOU_?");
-                                break;
+//                            case "test_manuel":
+//                                out.println("WHO_ARE_YOU_?");
+//                                break;
                             case "PASSWD\\s\\w+\\s*": //PAS VALIDER !! NE RENTRE JAMAIS ICI !!!
                                 out.println("Server: You gave me a password, You said '" + clientMessage + "'. Type 'quit' to exit.");
                                 break;
@@ -125,16 +125,24 @@ public class Serveur {
                                         out.println("ERROR");
                                     }
                                 } else {
-                                    out.println("Server: You said '" + clientMessage + "'. Type 'quit' to exit.");
-//                                BufferedReader serverInput = new BufferedReader(new InputStreamReader(System.in));
-//                                System.out.print("Server: ");
-//                                serverMessage = serverInput.readLine();
-//                                out.println(serverMessage);
+                                    BufferedReader userInput = new BufferedReader(new InputStreamReader(System.in));
+                                    System.out.print("Server (user input): ");
+                                    String serverMessage = userInput.readLine();
+                                    out.println(serverMessage);
                                 }
                                 break;
                         }
 
                         //out.println("Server: You said '" + clientMessage + "'. Type 'quit' to exit.");
+                    }
+
+                    while((clientMessage = in.readLine()) != null){
+                        getWork();
+                        out.println("NONCE "+String.valueOf(nonce)+" "+increment);
+                        out.println("PAYLOAD "+payload);
+                        System.out.println("Valeur de payload :"+payload);
+                        out.println("SOLVE "+difficulty);
+                        break;
                     }
                 }catch (SocketException e) {
                     System.err.println("Client connection reset: " + e.getMessage());

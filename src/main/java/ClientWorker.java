@@ -1,6 +1,7 @@
 //Code JavaRush https://javarush.com/fr/groups/posts/fr.654.les-classes-socket-et-serversocket-ou--bonjour-serveur--pouvez-vous-mentendre
 import java.io.*;
 import java.net.Socket;
+import java.util.Random;
 //import java.nio.charset.StandardCharsets;
 
 public class ClientWorker {
@@ -92,7 +93,7 @@ public class ClientWorker {
     }
 
     public void setPayload(String payload) {
-        payload = payload;
+        this.payload = payload;
     }
 
     public boolean isDifficultyReceived() {
@@ -112,14 +113,15 @@ public class ClientWorker {
     }
 
 
-    public String mineNonce(String nonce, String payload, int difficulty) {
+    public String mineNonce(int nonce, String payload, int difficulty) {
         //Faire l'algo de hachage (Maud)
         //pour l'instant je renvoie un truc nul, juste pour pouvoir tester l'appli
-        String res = nonce;
-        for (int i = 0; i < difficulty; i++) {
-            res = "0" + nonce;
-        }
-        return res;
+//        Random rand = new Random();
+//        String res = String.valueOf(nonce);
+//        for (int i = 0; i < difficulty; i++) {
+//            res = String.valueOf(rand.nextInt(0,10)) + res;
+//        }
+        return payload;
     }
 
     public static void main(String[] args) {
@@ -132,7 +134,8 @@ public class ClientWorker {
             String serverMessage ="";
 
             //PHASE 1 : validation client/serveur
-            boolean connected = false;
+            boolean connected = false;//pour passer a la phase 2 -> reception des consignes
+            boolean taskComplete = false;//pour passer a la phase 3 -> Hashage
             while ( (!connected) && ((serverMessage = in.readLine()) != null)) {
                 System.out.println("Server: " + serverMessage);
                 if (serverMessage.equalsIgnoreCase("quit")) {
@@ -155,7 +158,7 @@ public class ClientWorker {
                         connected = true;//on pourra passer à la phase 2
                         out.println("en attente ...");
                     case "YOU_DONT_FOOL_ME":
-                        out.println("bien vu chacal");
+                        out.println("j'ai reçu you don't fool me");
 //                    case "PROGRESS":
 //                        if (clientWorker.isMining()) {//Faire la condition qui dit que ça teste
 //                            out.println("TESTING");
@@ -210,9 +213,9 @@ public class ClientWorker {
 //                    break;
 //                }
             }
-
+            System.out.println("On est identifié, on passe à l'etape suivante");
             if(connected){
-                boolean taskComplete = false;
+
                 while ( !taskComplete && ((serverMessage = in.readLine()) != null)) {
                     System.out.println("Server: " + serverMessage);
                     String[] serverArgs = serverMessage.split("\\s+");
@@ -287,16 +290,22 @@ public class ClientWorker {
                                 break;
 
                         }
-                        if (clientMessage.equalsIgnoreCase("quit")) {
-                            break;
-                        }
                         if(clientWorker.isDifficultyReceived() && clientWorker.isNonceReceived() && clientWorker.isPayloadReceived()){
-                            taskComplete =true; //on peut passer dans la phase 3, celle ou on fait le hachage
+                            taskComplete = true; //on peut passer dans la phase 3, celle ou on fait le hachage
+                            System.out.println("task Complete = " +taskComplete);
                         }//Dans la phase 3, il y aura deux thread par client worker. Un qui fait l'algo de hachage,
                         // et qui envoie au serveur le resultat quand c'est finito, un qui est en attente des messages du serveur, pour savoir si
                         //il faut continuer la tache ou non.
+                        if (clientMessage.equalsIgnoreCase("quit")) {
+                            break;
+                        }
                     }
                 }
+            }
+
+            if(taskComplete){
+                //Faire la phase 3
+                System.out.println("Test TaskComplete : "+clientWorker.mineNonce(clientWorker.getNonce(), clientWorker.getPayload(), clientWorker.getDifficulty()));
             }
 
             socket.close();
