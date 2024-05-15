@@ -1,6 +1,7 @@
-
+package fr.ul.miage.projetReseau;
 import java.security.MessageDigest;
 
+//https://github.com/pinkr0x1k/proof-of-work/tree/master
 public class StringUtil {
     //Applies Sha256 to a string and returns the result.
     public static String applySha256(String input){

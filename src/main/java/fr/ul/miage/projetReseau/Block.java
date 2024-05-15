@@ -1,4 +1,8 @@
+package fr.ul.miage.projetReseau;
+
 import java.util.Date;
+
+//https://github.com/pinkr0x1k/proof-of-work/tree/master
 
 public class Block {
 
