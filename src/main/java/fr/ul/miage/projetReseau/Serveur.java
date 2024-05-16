@@ -7,6 +7,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.security.MessageDigest;
+import java.util.ArrayList;
+import java.util.Random;
 //import java.nio.charset.StandardCharsets;
 
 
@@ -25,7 +27,7 @@ public class Serveur {
     private static int nonce = 0;//Le nonce par lequel le client doit debuter sa recherche
     private static int increment = 0;//l'increment a ajouter apres chaque essai
     private static int difficulty = 0;//La difficulté attenue (i.e) le nombre de 0 par lequel le hash gagnant doit debuter
-    public static boolean phase2;
+    public static boolean phase2 = false;
 
     /**
      * Retrieves the current payload value.
@@ -150,8 +152,9 @@ public class Serveur {
     /**
      * Ici le serveur et le client se connecte entre eux, et valident cette connextion via un password
      * @param out le flux via lequel on envoir des message au client
-     * @param clientMessage  le message recu de la part du client
+     *  clientMessage  le message recu de la part du client
      */
+  /*
     public static void phaseIdentification(PrintWriter out, String clientMessage){
         try {
             System.out.println("Client: " + clientMessage);
@@ -189,6 +192,34 @@ public class Serveur {
         }
         //return breakPhase;
     }
+*/
+    public static void phaseIdentification(PrintWriter out, BufferedReader in) throws IOException {
+        out.println("WHO_ARE_YOU_?");
+        String clientMessage;
+        while ((clientMessage = in.readLine()) != null && !phase2) {
+            System.out.println("Client: " + clientMessage);
+            String[] clientArgs = clientMessage.split("\\s+");
+            switch (clientArgs[0]) {
+                case "ITS_ME":
+                    out.println("GIMME_PASSWORD");
+                    break;
+                case "PASSWD":
+                    if (clientArgs.length == 2 && clientArgs[1].equals(getPassword())) {
+                        out.println("HELLO_YOU");
+                    } else {
+                        out.println("YOU_DONT_FOOL_ME");
+                    }
+                    break;
+                case "READY":
+                    out.println("OK");
+                    phase2 = true;
+                    return;
+                default:
+                    System.out.println("Message inconnu: " + clientMessage);
+                    break;
+            }
+        }
+    }
 
     /**
      * Ici le serveur recoit toutes les consignes de la part de l'API web et les transmet
@@ -199,7 +230,7 @@ public class Serveur {
         getWork();//fonction permettant de mettre a jour nonce, increment payload et difficulty en fonction des données recu par l'API web
         out.println("NONCE "+String.valueOf(nonce)+" "+increment);
         out.println("PAYLOAD "+payload);
-        System.out.println("Valeur de payload :"+payload);
+        //System.out.println("Valeur de payload :"+payload);
         out.println("SOLVE "+difficulty);
     }
 
@@ -207,8 +238,9 @@ public class Serveur {
      * Dans cette phase, le serveur attend la reponse du client.
      * Il valide la réponse reçu en conversant avec l'API web
      * @param out le flux via lequel on envoir des message au client
-     * @param clientMessage  le message recu de la part du client
+     *  clientMessage  le message recu de la part du client
      */
+    /*
     public static void phaseTrouvonsUnHash(PrintWriter out, String clientMessage){
         try{
             System.out.println("Client: " + clientMessage);
@@ -241,13 +273,38 @@ public class Serveur {
             e.printStackTrace();
         }
     }
+*/
+    public static void phaseTrouvonsUnHash(PrintWriter out, BufferedReader in) throws IOException {
+        String clientMessage;
+        while ((clientMessage = in.readLine()) != null) {
+            System.out.println("Client: " + clientMessage);
+            String[] clientArgs = clientMessage.split("\\s+");
+            switch (clientArgs[0]) {
+                case "FOUND":
+                    if (clientArgs.length == 3) {
+                        String hashResult = clientArgs[1];
+                        int baseNonce = Integer.parseInt(clientArgs[2]);
+                        boolean valid = validateTheWork(hashResult, difficulty);
+                        System.out.println("Result for nonce " + baseNonce + ": " + hashResult + " is " + (valid ? "valid" : "invalid"));
+                    } else {
+                        System.err.println("Invalid FOUND message format");
+                    }
+                    break;
+                default:
+                    System.out.println("Message inconnu: " + clientMessage);
+                    break;
+            }
+        }
+    }
+
 
     /**
      * Fonction main du serveur.
      * c'est ici que tout se passe : les messages sont recus est envoyés
      * @param args aucun n'argument n'est géré
      */
-    public static void main(String[] args) {
+    /*public static void main(String[] args) {
+        ArrayList<Thread> threadList = new ArrayList<>();
         try {
             ServerSocket serverSocket = new ServerSocket(1337);
             System.out.println("Server started. Waiting for clients...");
@@ -257,16 +314,31 @@ public class Serveur {
                 System.out.println("Client connected: " + clientSocket);
 
                 // Créer un thread pour gérer ce client
-                Thread clientHandlerThread = new Thread(new ClientHandler(clientSocket));
-                clientHandlerThread.start();
+                threadList.add(new Thread(new ClientHandler(clientSocket)));
+                //Thread clientHandlerThread = new Thread(new ClientHandler(clientSocket));
+                threadList.get(threadList.size() -1).start();
                 // Envoyer WHO_ARE_YOU à ce client
                 PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
-                out.println("WHO_ARE_YOU_?");
+                //out.println("WHO_ARE_YOU_?");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }*/
+    public static void main(String[] args) {
+        try (ServerSocket serverSocket = new ServerSocket(1337)) {
+            System.out.println("Server started. Waiting for clients...");
+
+            while (true) {
+                Socket clientSocket = serverSocket.accept();
+                System.out.println("Client connected: " + clientSocket);
+                new Thread(new ClientHandler(clientSocket)).start();
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
+
 //    public static void main(String[] args) {
 //        //boolean phase2 = false; //permettra de rentrer dans la phase de recuperage des travaux a faire aupres de l'apiWeb
 //        //boolean phase3 = false; // permetre de rentrer dans la phase d'attente de reponse par le client
@@ -314,37 +386,93 @@ public class Serveur {
 
     static class ClientHandler implements Runnable {
         private Socket clientSocket;
+        private BufferedReader in;
+        private PrintWriter out;
 
-        public ClientHandler(Socket clientSocket) {
-            this.clientSocket = clientSocket;
+        public ClientHandler(Socket socket) {
+            this.clientSocket = socket;
         }
 
+        /*@Override
+        public void run() {
+            try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+                 PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true)) {
+
+                out.println("WHO_ARE_YOU_?");
+
+                String clientMessage;
+                while (((clientMessage = in.readLine()) != null) && !phase2) {
+                    phaseIdentification(out, clientMessage);
+                }
+                while ((clientMessage = in.readLine()) != null) {
+                    phaseReceptionDesConsignes(out);
+                    break;
+                }
+                while (((clientMessage = in.readLine()) != null)) {
+                    phaseTrouvonsUnHash(out, clientMessage);
+                }
+
+            } catch (SocketException e) {
+                System.err.println("Client connection reset: " + e.getMessage());
+            } catch (IOException e) {
+                System.err.println("Error in client communication: " + e.getMessage());
+            } finally {
+                try {
+                    clientSocket.close();
+                } catch (IOException e) {
+                    System.err.println("Error closing client socket: " + e.getMessage());
+                }
+            }
+        }*/
         @Override
         public void run() {
             try {
-                BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
-                try {
-                    // Phase d'identification
-                    out.println("WHO_ARE_YOU_?");
-                    String clientMessage = in.readLine();
-                    while (((clientMessage = in.readLine()) != null) && !phase2) {
-                        phaseIdentification(out, clientMessage);
+                in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+                out = new PrintWriter(clientSocket.getOutputStream(), true);
+
+                out.println("WHO_ARE_YOU_?");
+                String clientResponse = in.readLine();
+                System.out.println("Client: " + clientResponse);
+
+                if ("ITS_ME".equals(clientResponse)) {
+                    out.println("GIMME_PASSWORD");
+                    clientResponse = in.readLine();
+                    System.out.println("Client: " + clientResponse);
+
+                    if (clientResponse.startsWith("PASSWD")) {
+                        out.println("HELLO_YOU");
+                        out.println("OK");
+
+                        int nonce = new Random().nextInt(100000);
+                        out.println("NONCE " + nonce + " 2");
+                        out.println("PAYLOAD def");
+                        out.println("SOLVE 3");
+
+                        clientResponse = in.readLine();
+                        System.out.println("Client: " + clientResponse);
+
+                        if (clientResponse.startsWith("FOUND")) {
+                            String[] parts = clientResponse.split(" ");
+                            if (parts.length == 3) {
+                                String hash = parts[1];
+                                int foundNonce = Integer.parseInt(parts[2]);
+
+                                if (validateTheWork(hash, 2)) {
+                                    System.out.println("Result for nonce " + foundNonce + ": " + hash + " is valid");
+                                } else {
+                                    System.out.println("Result for nonce " + foundNonce + ": " + hash + " is invalid");
+                                }
+                            }
+                        }
                     }
-                    while ((clientMessage = in.readLine()) != null) { //ici il faudrait que j'arrive a le sortir de la boucle while qui sert vraiment à rien'
-                        phaseReceptionDesConsignes(out);
-                        break;
-                    }
-                    while (((clientMessage = in.readLine()) != null)) {// && !phase3) {
-                        phaseTrouvonsUnHash(out, clientMessage);
-                    }
-                }catch (SocketException e) {
-                    System.err.println("Client connection reset: " + e.getMessage());
                 }
+
                 clientSocket.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
+
+
     }
 }
