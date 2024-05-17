@@ -5,10 +5,10 @@ import java.io.*;
 //import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketException;
-import java.security.MessageDigest;
-import java.util.ArrayList;
-import java.util.Random;
+//import java.net.SocketException;
+//import java.security.MessageDigest;
+//import java.util.ArrayList;
+//import java.util.Random;
 //import java.nio.charset.StandardCharsets;
 
 
@@ -27,16 +27,16 @@ public class Serveur {
     private static int nonce = 0;//Le nonce par lequel le client doit debuter sa recherche
     private static int increment = 0;//l'increment a ajouter apres chaque essai
     private static int difficulty = 0;//La difficulté attenue (i.e) le nombre de 0 par lequel le hash gagnant doit debuter
-    public static boolean phase2 = false;
+    //public static boolean phase2 = false;
 
-    /**
+    /*
      * Retrieves the current payload value.
      *
      * @return The current payload value.
      */
-    public String getPayload() {
+    /*public String getPayload() {
         return payload;
-    }
+    }*/
 
     /**
      * Sets the payload value.
@@ -47,14 +47,14 @@ public class Serveur {
         payload = PayloadVal;
     }
 
-    /**
+    /*
      * Retrieves the current nonce value.
      *
      * @return The current nonce value.
      */
-    public int getNonce() {
+    /*public int getNonce() {
         return nonce;
-    }
+    }*/
 
     /**
      * Sets the nonce value.
@@ -65,14 +65,14 @@ public class Serveur {
         nonce = nonceVal;
     }
 
-    /**
+    /*
      * Retrieves the current increment value.
      *
      * @return The current increment value.
      */
-    public int getIncrement() {
-        return increment;
-    }
+    //public int getIncrement() {
+    //    return increment;
+    //}
 
     /**
      * Sets the increment value.
@@ -83,14 +83,14 @@ public class Serveur {
         increment = incrementVal;
     }
 
-    /**
+    /*
      * Retrieves the current difficulty value.
      *
      * @return The current difficulty value.
      */
-    public int getDifficulty() {
-        return difficulty;
-    }
+    //public int getDifficulty() {
+    //    return difficulty;
+    //}
 
     /**
      * Sets the difficulty value.
@@ -137,7 +137,7 @@ public class Serveur {
      * Permet de valider un hash qui a été trouvé par un client
      * @param hash hash a valider aupres de l'API web
      * @param difficulty la difficulté demandée pour ce hash
-     * @return
+     * @return e hash trouvé par la fonction
      */
     public static boolean validateTheWork(String hash, int difficulty) {
         //TODO : faire un meilleur test peut etre ? (Maud)
@@ -149,182 +149,7 @@ public class Serveur {
         return hash.startsWith(onVeutCeDebut);
     }
 
-    /**
-     * Ici le serveur et le client se connecte entre eux, et valident cette connextion via un password
-     * @param out le flux via lequel on envoir des message au client
-     *  clientMessage  le message recu de la part du client
-     */
-  /*
-    public static void phaseIdentification(PrintWriter out, String clientMessage){
-        try {
-            System.out.println("Client: " + clientMessage);
-            String[] clientArgs = clientMessage.split("\\s+"); //on separe les données recu en prendant des espaces comme separateuts
-            switch (clientArgs[0]) {
-                case "ITS_ME":
-                    out.println("GIMME_PASSWORD");
-                    break;
-                case "READY":
-                    out.println("OK");
-                    phase2 = true;
-                    break;
-                case "PASSWD":
-                    if(clientArgs.length==2){
-                        if (clientArgs[1].equals(getPassword())) {
-                            out.println("HELLO_YOU");
-                        } else {
-                            out.println("YOU_DONT_FOOL_ME");
-                        }
-                    }else{
-                        System.err.println("Invalid PASSWORD message format");
-                        out.println("YOU_DONT_FOOL_ME");
-                    }
-                    break;
 
-                default:
-                    BufferedReader userInput = new BufferedReader(new InputStreamReader(System.in));
-                    System.out.print("Server (user input): ");
-                    String serverMessage = userInput.readLine();
-                    out.println(serverMessage);
-                    break;
-            }
-        }catch (IOException e) {
-            e.printStackTrace();
-        }
-        //return breakPhase;
-    }
-*/
-    public static void phaseIdentification(PrintWriter out, BufferedReader in) throws IOException {
-        out.println("WHO_ARE_YOU_?");
-        String clientMessage;
-        while ((clientMessage = in.readLine()) != null && !phase2) {
-            System.out.println("Client: " + clientMessage);
-            String[] clientArgs = clientMessage.split("\\s+");
-            switch (clientArgs[0]) {
-                case "ITS_ME":
-                    out.println("GIMME_PASSWORD");
-                    break;
-                case "PASSWD":
-                    if (clientArgs.length == 2 && clientArgs[1].equals(getPassword())) {
-                        out.println("HELLO_YOU");
-                    } else {
-                        out.println("YOU_DONT_FOOL_ME");
-                    }
-                    break;
-                case "READY":
-                    out.println("OK");
-                    phase2 = true;
-                    return;
-                default:
-                    System.out.println("Message inconnu: " + clientMessage);
-                    break;
-            }
-        }
-    }
-
-    /**
-     * Ici le serveur recoit toutes les consignes de la part de l'API web et les transmet
-     * Il met a jour ses variables de classe, et les transmet au client
-     * @param out le flux via lequel on envoie des messages au client
-     */
-    public static void phaseReceptionDesConsignes(PrintWriter out){
-        getWork();//fonction permettant de mettre a jour nonce, increment payload et difficulty en fonction des données recu par l'API web
-        out.println("NONCE "+String.valueOf(nonce)+" "+increment);
-        out.println("PAYLOAD "+payload);
-        //System.out.println("Valeur de payload :"+payload);
-        out.println("SOLVE "+difficulty);
-    }
-
-    /**
-     * Dans cette phase, le serveur attend la reponse du client.
-     * Il valide la réponse reçu en conversant avec l'API web
-     * @param out le flux via lequel on envoir des message au client
-     *  clientMessage  le message recu de la part du client
-     */
-    /*
-    public static void phaseTrouvonsUnHash(PrintWriter out, String clientMessage){
-        try{
-            System.out.println("Client: " + clientMessage);
-            //if (clientMessage.equalsIgnoreCase("quit")) {
-            //    break;
-            //}
-            String[] clientArgs = clientMessage.split("\\s+");
-
-            //String serverMessage = "";// = userInput.readLine();
-            switch (clientArgs[0]) {
-                case "FOUND":
-                    if (clientArgs.length == 3) {
-                        String hashResult = clientArgs[1];
-                        int baseNonce = Integer.parseInt(clientArgs[2]);
-                        System.out.println("Result received for nonce :  " + baseNonce + ". Result : " + hashResult);
-                        System.out.println("Result validation : " + validateTheWork(hashResult, difficulty)); //validateTheWork envoie le hash trouvé à l'API web pour le valider
-                        //ici il faudra envoyer SOLVEd a tous les clients si une solution a été trouvée
-                    }
-                    else{
-                        System.err.println("Invalid FOUND message format");
-                    }
-                    break;
-                default :
-                    BufferedReader userInput = new BufferedReader(new InputStreamReader(System.in));
-                    System.out.print("Server (user input): ");
-                    String serverMessage = userInput.readLine();
-                    out.println(serverMessage);
-            }
-        }catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-*/
-    public static void phaseTrouvonsUnHash(PrintWriter out, BufferedReader in) throws IOException {
-        String clientMessage;
-        while ((clientMessage = in.readLine()) != null) {
-            System.out.println("Client: " + clientMessage);
-            String[] clientArgs = clientMessage.split("\\s+");
-            switch (clientArgs[0]) {
-                case "FOUND":
-                    if (clientArgs.length == 3) {
-                        String hashResult = clientArgs[1];
-                        int baseNonce = Integer.parseInt(clientArgs[2]);
-                        boolean valid = validateTheWork(hashResult, difficulty);
-                        System.out.println("Result for nonce " + baseNonce + ": " + hashResult + " is " + (valid ? "valid" : "invalid"));
-                    } else {
-                        System.err.println("Invalid FOUND message format");
-                    }
-                    break;
-                default:
-                    System.out.println("Message inconnu: " + clientMessage);
-                    break;
-            }
-        }
-    }
-
-
-    /**
-     * Fonction main du serveur.
-     * c'est ici que tout se passe : les messages sont recus est envoyés
-     * @param args aucun n'argument n'est géré
-     */
-    /*public static void main(String[] args) {
-        ArrayList<Thread> threadList = new ArrayList<>();
-        try {
-            ServerSocket serverSocket = new ServerSocket(1337);
-            System.out.println("Server started. Waiting for clients...");
-
-            while (true) {
-                Socket clientSocket = serverSocket.accept();
-                System.out.println("Client connected: " + clientSocket);
-
-                // Créer un thread pour gérer ce client
-                threadList.add(new Thread(new ClientHandler(clientSocket)));
-                //Thread clientHandlerThread = new Thread(new ClientHandler(clientSocket));
-                threadList.get(threadList.size() -1).start();
-                // Envoyer WHO_ARE_YOU à ce client
-                PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
-                //out.println("WHO_ARE_YOU_?");
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }*/
     public static void main(String[] args) {
         try (ServerSocket serverSocket = new ServerSocket(1337)) {
             System.out.println("Server started. Waiting for clients...");
@@ -440,13 +265,24 @@ public class Serveur {
                     System.out.println("Client: " + clientResponse);
 
                     if (clientResponse.startsWith("PASSWD")) {
-                        out.println("HELLO_YOU");
-                        out.println("OK");
+                        String[] clientParts = clientResponse.split("\\s+");
+                        if (clientParts.length == 2 && clientParts[1].equals(getPassword())){
+                            out.println("HELLO_YOU");
+                        }else{
+                            out.println("YOU_DONT_FOOL_ME");
+                        }
+                        clientResponse = in.readLine();
+                        System.out.println("Client: " + clientResponse);
 
-                        int nonce = new Random().nextInt(100000);
-                        out.println("NONCE " + nonce + " 2");
-                        out.println("PAYLOAD def");
-                        out.println("SOLVE 3");
+                        if(clientResponse.startsWith("READY")) {
+                            out.println("OK");
+                        }
+
+                        getWork();
+                        //int nonce =
+                        out.println("NONCE " + nonce + " "+increment);
+                        out.println("PAYLOAD "+payload);
+                        out.println("SOLVE "+difficulty);
 
                         clientResponse = in.readLine();
                         System.out.println("Client: " + clientResponse);
