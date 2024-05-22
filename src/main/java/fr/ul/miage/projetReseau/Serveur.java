@@ -5,11 +5,25 @@ import java.io.*;
 //import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
 //import java.net.SocketException;
 //import java.security.MessageDigest;
 //import java.util.ArrayList;
 //import java.util.Random;
 //import java.nio.charset.StandardCharsets;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.HttpURLConnection;
+//import java.net.ServerSocket;
+//import java.net.Socket;
+import java.net.URL;
+//import org.json.JSONObject;
 
 
 /**
@@ -18,89 +32,134 @@ import java.net.Socket;
  */
 public class Serveur {
 
-    //private static Socket clientSocket; // socket for communication
-    //private static ServerSocket server; // server socket
-    //private static BufferedReader in; // socket read stream
-    //private static BufferedWriter out; // socket write stream
+    static class ClientHandler extends Thread {
+        private Socket clientSocket;
+        //private BufferedReader in;
+        //private PrintWriter out;
+        private int numberOfThread;
 
-    private static String payload = ""; //La données que le client doit utiliser pour trouver le hash qui va bien
-    private static int nonce = 0;//Le nonce par lequel le client doit debuter sa recherche
-    private static int increment = 0;//l'increment a ajouter apres chaque essai
-    private static int difficulty = 0;//La difficulté attenue (i.e) le nombre de 0 par lequel le hash gagnant doit debuter
-    //public static boolean phase2 = false;
+        public ClientHandler(Socket socket, int numberOfThread) {
+            this.clientSocket = socket;
+            this.numberOfThread = numberOfThread;
+        }
 
-    /*
-     * Retrieves the current payload value.
-     *
-     * @return The current payload value.
-     */
-    /*public String getPayload() {
-        return payload;
-    }*/
 
-    /**
-     * Sets the payload value.
-     *
-     * @param PayloadVal The new value for the payload.
-     */
-    public static void setPayload(String PayloadVal) {
-        payload = PayloadVal;
+        @Override
+        public void run() {
+            try {
+                while(true) {
+                    BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+                    PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
+
+                    String messageCLient = in.readLine();
+                    String messageARepondre = ecouteClient(processMessageClient(messageCLient));
+                    if ((messageARepondre!=null) && (messageARepondre != "")) {
+                        out.println(messageARepondre);
+                    }
+                    //in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+                    //messageCLient = in.readLine();
+                }
+
+                //clientSocket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        public void sendProgress(){
+            try {
+                PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
+                out.println("PROGRESS");
+
+            }catch(IOException e){
+                e.printStackTrace();
+            }
+        }
+
+        public void sendCancelled(){
+            try {
+                PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
+                out.println("CANCELLED");
+
+            }catch(IOException e){
+                e.printStackTrace();
+            }
+        }
+
+        public void sendWhoAreYou(){
+            try {
+                PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
+                out.println("WHO_ARE_YOU_?");
+
+            }catch(IOException e){
+                e.printStackTrace();
+            }
+        }
+
+
+        String[] processMessageClient(String messageClient){
+            System.out.println("Message du client : "+messageClient);
+            return messageClient.split("\\s+");
+        }
+
+        String ecouteClient(String[] messageClientTab){
+            String messageARepondre = "";
+            switch (messageClientTab[0]){
+                case "ITS_ME":
+                    messageARepondre = "GIMME_PASSWORD";
+                    break;
+                case "PASSWD":
+
+                    if(messageClientTab.length==2){
+                        if(messageClientTab[1].equals(getPassword())){
+                            messageARepondre="HELLO_YOU";
+                        }
+                        else{
+                            messageARepondre="YOU_DONT_FOOL_ME";
+                            //messageARepondre="YOU_DONT_FOOL_ME";
+                        }
+                    }
+                    break;
+                case "READY":
+                    generate_work(); // Est ce que on les fait tout de suite ou pas les SOLVE/PAYLOAD/NONCE ??
+                    try {
+                        PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
+                        out.println("NONCE "+start+" "+increment);
+                        out.println("PAYLOAD "+data);
+                        out.println("SOLVE "+difficulty);
+                    }catch(IOException e){
+                        e.printStackTrace();
+                    }
+                    break;
+                case "FOUND":
+                    if(messageClientTab.length==3){
+                        hashRes = Integer.parseInt(messageClientTab[1]);
+                        nonceRes = Integer.parseInt(messageClientTab[2]);
+                        if(validate_work(String.valueOf(hashRes),difficulty, nonceRes)){
+                            messageARepondre = "SOLVED";
+                        };
+
+                    }
+                    break;
+                case "TESTING":
+                    System.out.println("Client "+numberOfThread+" is TESTING");
+                    break;
+                case "NOPE":
+                    System.out.println("Client "+numberOfThread+" is not testing");
+                    break;
+            }
+            return messageARepondre;
+        }
     }
-
-    /*
-     * Retrieves the current nonce value.
-     *
-     * @return The current nonce value.
-     */
-    /*public int getNonce() {
-        return nonce;
-    }*/
-
-    /**
-     * Sets the nonce value.
-     *
-     * @param nonceVal The new value for the nonce.
-     */
-    public static void setNonce(int nonceVal) {
-        nonce = nonceVal;
-    }
-
-    /*
-     * Retrieves the current increment value.
-     *
-     * @return The current increment value.
-     */
-    //public int getIncrement() {
-    //    return increment;
-    //}
-
-    /**
-     * Sets the increment value.
-     *
-     * @param incrementVal The new value for the increment.
-     */
-    public static void setIncrement(int incrementVal) {
-        increment = incrementVal;
-    }
-
-    /*
-     * Retrieves the current difficulty value.
-     *
-     * @return The current difficulty value.
-     */
-    //public int getDifficulty() {
-    //    return difficulty;
-    //}
-
-    /**
-     * Sets the difficulty value.
-     *
-     * @param difficultyVal The new value for the difficulty.
-     */
-    public static void setDifficulty(int difficultyVal) {
-        difficulty = difficultyVal;
-    }
-
+    private static String data = "";
+    private static int start = 0;
+    private static int hashRes = 0;
+    private static int nonceRes = 0;
+    private static int increment = 0;
+    private static int difficulty = 0;
+    private static boolean envoieProgress = false;
+    private static boolean envoieCancelled = false;
+    private static final String API_KEY = "recoNRuTzI2uLiS9X"; // Your API key here
 
     /**
      * Obtiens les données de l'api web, qu'il faudra ensuite transmettre au client
@@ -109,206 +168,209 @@ public class Serveur {
      *  (modulo 256 ou quelquechose comme ça)
      * Il vaut mieux le faire au moment de cette fonction, c'est mieux pour le rest edu code
      */
-    public static void getWork() {
-        //données au hasard pour pouvoir tester le code.
-        // partie de Olha et Oleksandra
-        setPayload("def");
-        setNonce(78910);
-        setDifficulty(3);
-        setIncrement(2);
-    }
+//    public static void getWork() {
+//        //données au hasard pour pouvoir tester le code.
+//        // partie de Olha et Oleksandra
+//        data = "def";
+//        start = 78910;
+//        difficulty = 8;
+//        //increment = 2;
+//    }
 
-    /**
-     * Fonction permettant d'obtenir le password pour se connecter au serveur.
-     * Pour l'instant j'ai fait un truc pourri, je sais pas ce que le prof attend
-     * Voila ce qui est dit dans le sujet :  Idéalement, le mot de passe est aléatoire, généré par le serveur au démarrage
-     * et fourni aux clients par un canal sécurisé.
-     * Je ne sais pas comment faire un canal sécurisé
-     * @return String : le mot de passe qui sera reconnu par le serveur
-     */
     public static String getPassword() {
         //A mieux faire aussi, juste pour pouvoir tester le reste du code
         return "password1";
     }
 
-
-    /**
-     * Fonction qui doit converser avec l'api Web ( a faire par olha/sasha)
-     * Permet de valider un hash qui a été trouvé par un client
-     * @param hash hash a valider aupres de l'API web
-     * @param difficulty la difficulté demandée pour ce hash
-     * @return e hash trouvé par la fonction
-     */
-    public static boolean validateTheWork(String hash, int difficulty) {
-        //TODO : faire un meilleur test peut etre ? (Maud)
-        //       ou valider avec l'api web validate work ? (Olha & Sasha)
-        String onVeutCeDebut = "";
-        for (int i = 0; i < difficulty; i++) {
-            onVeutCeDebut = "0" + onVeutCeDebut;
-        }
-        return hash.startsWith(onVeutCeDebut);
-    }
-
+//    public static boolean validateTheWork(String hash, int difficulty) {
+//        //TODO : valider avec l'api web validate work (Olha & Sasha)
+//        String onVeutCeDebut = "";
+//        for (int i = 0; i < difficulty; i++) {
+//            onVeutCeDebut = "0" + onVeutCeDebut;
+//        }
+//        return hash.startsWith(onVeutCeDebut);
+//    }
 
     public static void main(String[] args) {
-        try (ServerSocket serverSocket = new ServerSocket(1337)) {
+        int numberOfClients = 3;
+        //difficulty = 3;
+
+        // Vérifier s'il y a des arguments et les traiter
+        if (args.length == 2 && args[0].equals("-n")) {
+            try {
+                numberOfClients = Integer.parseInt(args[1]);
+            } catch (NumberFormatException e) {
+                System.err.println("Nombre de clients spécifié incorrect.");
+                System.exit(1);
+            }
+        }
+
+        increment = numberOfClients;
+        try {
+            ServerSocket serverSocket = new ServerSocket(1337);
+            List<ClientHandler> clientHandlers = new ArrayList<>();
             System.out.println("Server started. Waiting for clients...");
 
-            while (true) {
+            //on connecte 8 clients
+            while (clientHandlers.size() < numberOfClients) {//on veut que 8 clients se connectent au serveur avant de commencer le travail
                 Socket clientSocket = serverSocket.accept();
                 System.out.println("Client connected: " + clientSocket);
-                new Thread(new ClientHandler(clientSocket)).start();
+                ClientHandler clientHandler = new ClientHandler(clientSocket, clientHandlers.size());
+                clientHandlers.add(clientHandler);
+
             }
-        } catch (IOException e) {
+
+            //on lance les 8 threads
+            for(int i = 0; i<clientHandlers.size(); i++) {
+                clientHandlers.get(i).start();
+                clientHandlers.get(i).sendWhoAreYou();
+                //threadList.get(i).start();m
+            }
+            while (true) {
+                //On regarde si l'utilisateur veut envoyer des commandes spéciales aux threads
+                Scanner scanner = new Scanner(System.in);
+                System.out.println("Commandes disponibles : \n \t-CANCELLED : stopper tous les clients connectés\n\t-PROGRESS : connaitre l'etat des clients connectés");
+                String commandeUser = scanner.nextLine();
+                if (commandeUser.equals("CANCELLED")) {
+                    clientHandlers.forEach(ClientHandler::sendCancelled);
+                } else if (commandeUser.equals("PROGRESS")) {
+                    clientHandlers.forEach(ClientHandler::sendProgress);
+                }
+            }
+
+        }catch(IOException e){
             e.printStackTrace();
         }
     }
 
-//    public static void main(String[] args) {
-//        //boolean phase2 = false; //permettra de rentrer dans la phase de recuperage des travaux a faire aupres de l'apiWeb
-//        //boolean phase3 = false; // permetre de rentrer dans la phase d'attente de reponse par le client
-//        //boolean breakPhase = false;
-//        try {
-//        ServerSocket serverSocket = new ServerSocket(1337);//on crée un socket, le serveur ecoute sur le port 1337 : il n'acceptera aucune connexion qui ne vient pas sur ce port la
-//        System.out.println("Server started. Waiting for client...");
-//            while (true) { //boucle infinie , qui contient toute la communication avec le client
-//                Socket clientSocket = serverSocket.accept();//on attend qu'un client se connecte, quand c'est le cas on accepte et on peut passer a la suite
-//                System.out.println("Client connected: " + clientSocket);
-//                try {
-//                    BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));//on recevra les message via in
-//                    PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);//on enverra des messages via out
-//                    //int i = 0;
-//                    //while(true && i<5) {
-//                        System.out.println("********************Nouvelle tache **************\n");
-//                        out.println("WHO_ARE_YOU_?");//on envoie ça direct, des qu'un client e connecte il recevra WHO_ARE_YOU, pour lancer le protocole
-//
-//                        String clientMessage;
-//
-//                        while (((clientMessage = in.readLine()) != null) && !phase2) {
-//                            phaseIdentification(out, clientMessage);
-//                        }
-//                        while ((clientMessage = in.readLine()) != null) { //ici il faudrait que j'arrive a le sortir de la boucle while qui sert vraiment à rien'
-//                            phaseReceptionDesConsignes(out);
-//                            break;
-//                        }
-//                        while (((clientMessage = in.readLine()) != null)) {// && !phase3) {
-//                            phaseTrouvonsUnHash(out, clientMessage);
-//                        }
-//                        //i++;
-//
-//                    //}
-//
-//                }catch (SocketException e) {
-//                    System.err.println("Client connection reset: " + e.getMessage());
-//                }
-//                System.out.println("Client disconnected: " + clientSocket);
-//                clientSocket.close();
-//            }
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//    }
 
-    static class ClientHandler implements Runnable {
-        private Socket clientSocket;
-        private BufferedReader in;
-        private PrintWriter out;
 
-        public ClientHandler(Socket socket) {
-            this.clientSocket = socket;
+    private static void getData(String responseText) {
+        Pattern patternData = Pattern.compile("\"data\":\"(.*?)\"");
+        Matcher matcherData = patternData.matcher(responseText);
+        if (matcherData.find()) {
+            String dataval = matcherData.group(1);
+            data = dataval;
+        } else {
+            System.out.println("Data not found in response.");
         }
+    }
 
-        /*@Override
-        public void run() {
-            try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                 PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true)) {
-
-                out.println("WHO_ARE_YOU_?");
-
-                String clientMessage;
-                while (((clientMessage = in.readLine()) != null) && !phase2) {
-                    phaseIdentification(out, clientMessage);
-                }
-                while ((clientMessage = in.readLine()) != null) {
-                    phaseReceptionDesConsignes(out);
-                    break;
-                }
-                while (((clientMessage = in.readLine()) != null)) {
-                    phaseTrouvonsUnHash(out, clientMessage);
-                }
-
-            } catch (SocketException e) {
-                System.err.println("Client connection reset: " + e.getMessage());
-            } catch (IOException e) {
-                System.err.println("Error in client communication: " + e.getMessage());
-            } finally {
-                try {
-                    clientSocket.close();
-                } catch (IOException e) {
-                    System.err.println("Error closing client socket: " + e.getMessage());
-                }
+    // read response API
+    private static String readResponse(HttpURLConnection conn) throws IOException {
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+            StringBuilder response = new StringBuilder();
+            String inputLine;
+            while ((inputLine = in.readLine()) != null) {
+                response.append(inputLine);
             }
-        }*/
-        @Override
-        public void run() {
-            try {
-                in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                out = new PrintWriter(clientSocket.getOutputStream(), true);
+            return response.toString();
+        }
+    }
 
-                out.println("WHO_ARE_YOU_?");
-                String clientResponse = in.readLine();
-                System.out.println("Client: " + clientResponse);
-
-                if ("ITS_ME".equals(clientResponse)) {
-                    out.println("GIMME_PASSWORD");
-                    clientResponse = in.readLine();
-                    System.out.println("Client: " + clientResponse);
-
-                    if (clientResponse.startsWith("PASSWD")) {
-                        String[] clientParts = clientResponse.split("\\s+");
-                        if (clientParts.length == 2 && clientParts[1].equals(getPassword())){
-                            out.println("HELLO_YOU");
-                        }else{
-                            out.println("YOU_DONT_FOOL_ME");
-                        }
-                        clientResponse = in.readLine();
-                        System.out.println("Client: " + clientResponse);
-
-                        if(clientResponse.startsWith("READY")) {
-                            out.println("OK");
-                        }
-
-                        getWork();
-                        //int nonce =
-                        out.println("NONCE " + nonce + " "+increment);
-                        out.println("PAYLOAD "+payload);
-                        out.println("SOLVE "+difficulty);
-
-                        clientResponse = in.readLine();
-                        System.out.println("Client: " + clientResponse);
-
-                        if (clientResponse.startsWith("FOUND")) {
-                            String[] parts = clientResponse.split(" ");
-                            if (parts.length == 3) {
-                                String hash = parts[1];
-                                int foundNonce = Integer.parseInt(parts[2]);
-
-                                if (validateTheWork(hash, 2)) {
-                                    System.out.println("Result for nonce " + foundNonce + ": " + hash + " is valid");
-                                } else {
-                                    System.out.println("Result for nonce " + foundNonce + ": " + hash + " is invalid");
-                                }
-                            }
-                        }
-                    }
-                }
-
-                clientSocket.close();
-            } catch (IOException e) {
-                e.printStackTrace();
+    // read error API ~ difference bertween readResponse and readErrorResponse in
+//  the parameters conn.getInputStream() and conn.getErrorStream()
+    private static void errorResponse(HttpURLConnection conn, int responseCode) throws IOException {
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getErrorStream()))) {
+            StringBuilder response = new StringBuilder();
+            String inputLine;
+            while ((inputLine = in.readLine()) != null) {
+                response.append(inputLine);
             }
+            System.out.println("*******************");
+            System.out.println("ERROR");
+            System.out.println("*******************");
+            throw new IOException("HTTP/1.1 " + responseCode  + "\n" + response.toString());
+
         }
 
 
     }
+
+
+    public static void generate_work() {
+        //données au hasard pour pouvoir tester le code.
+        data = "def";
+        start = 78910;
+        difficulty = 3;
+        increment = 2;
+
+
+
+        try {
+            URL url = new URL("https://projet-raizo-idmc.netlify.app/.netlify/functions/generate_work?d=" + difficulty);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+
+            conn.setRequestMethod("GET");
+            conn.setRequestProperty("Accept", "application/json");
+            conn.setRequestProperty("Authorization", "Bearer " + API_KEY); // s’authentification
+
+            int responseCode = conn.getResponseCode();
+            String response = readResponse(conn); // method for readind response
+
+            if (responseCode == 200 || responseCode == 201){
+                System.out.println("HTTP/1.1 OK");
+                System.out.println("HTTP/1.1 201 Created ");
+                System.out.println(response);
+                getData(response); // method for get "data" from json file and save it to payload
+            } else if (responseCode >= 400) {
+                errorResponse(conn, responseCode);
+            }
+
+        } catch (Exception e) {
+            System.out.println("Error making GET request: " + e.getMessage());
+        }
+    }
+
+    public static boolean validate_work(String hash, int difficulty, int nonce) {
+
+        String urlString = "https://projet-raizo-idmc.netlify.app/.netlify/functions/validate_work";
+        String requestBody = String.format("{\"d\":%d,\"n\":\"%d\",\"h\":\"%s\"}", difficulty, nonce, hash);
+
+
+        try {
+            URL url = new URL(urlString);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("POST");
+            connection.setRequestProperty("Accept", "application/json");
+            connection.setRequestProperty("Authorization", "Bearer " + API_KEY);
+            connection.setRequestProperty("Content-Type", "application/json;utf-8");
+            connection.setDoOutput(true);
+
+            System.out.println("Request Body: " + requestBody);
+
+            try (OutputStream os = connection.getOutputStream()) {
+                byte[] input = requestBody.getBytes("utf-8");
+                os.write(input, 0, input.length);
+                os.flush();
+            }
+
+            int responseCode = connection.getResponseCode();
+
+            if (responseCode >= 400) {
+                errorResponse(connection, responseCode);
+            }
+
+            String responseText = readResponse(connection);
+
+            if (responseCode == 200) {
+                System.out.println("HTTP/1.1 200 OK");
+                System.out.println(responseText);
+                return true;
+            }
+
+
+        } catch (Exception e) {
+            System.err.println("Error making POST request:");
+            System.err.println("URL: " + urlString);
+            System.err.println("Request Body: " + requestBody);
+            System.err.println("Exception Message: " + e.getMessage());
+        }
+
+        return false;
+    }
+
+
+
+
 }
