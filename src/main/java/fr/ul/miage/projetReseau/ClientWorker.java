@@ -9,7 +9,6 @@ import java.nio.ByteBuffer;
 public class ClientWorker {
 
     //les données pour la connexion
-
     private static Socket socket ;//= new Socket(SERVER_ADDRESS, SERVER_PORT);
     private static final String SERVER_ADDRESS = "127.0.0.1";
     private static final int SERVER_PORT = 1337;
@@ -21,8 +20,6 @@ public class ClientWorker {
     private static int increment;
 
     //les status du client
-    //private static boolean unknown = true;
-    //private static boolean connected = false;
     private static boolean ready = false;
     private static boolean working = false;
     //private static boolean latent = false;
@@ -33,7 +30,6 @@ public class ClientWorker {
     private static boolean solveReceived = false;
 
     public static String hashFound;
-    public static int difficultyFound;
     public static String nonceFound;
 
 
@@ -301,53 +297,44 @@ public class ClientWorker {
         return command.split("\\s+");
     }
 
-    public static void mineBlock(int difficulty, int increment, int nonce, String payload) {
+    public static String convertByteToHexaString(byte[] tabBytes){
 
-        try {
-        String target = new String(new char[difficulty]).replace('\0', '0'); // Create a string with difficulty * "0"
-        //byte[] targetByte = target.getBytes(StandardCharsets.UTF_8);
-
-        //byte[] hash = "";
-        boolean targetHit = false;
-        while(!targetHit) {
-            byte[] dataByte = payload.getBytes(StandardCharsets.UTF_8);
-            byte[] nonceByte = ByteBuffer.allocate(4).putInt(nonce).array();
-            final byte[] byteFullData = new byte[dataByte.length + nonceByte.length];
-            System.arraycopy(dataByte, 0, byteFullData, 0, dataByte.length);
-            System.arraycopy(nonceByte, 0, byteFullData, dataByte.length, nonceByte.length);
-
-
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(byteFullData);
-
-
-            //Verifier que hash starts with target
-
-            StringBuffer hexString = new StringBuffer();
-
-            //Converti chaque valeur de hash en hexa
-            for (int i = 0; i < hash.length; i++) {
-                String hex = Integer.toHexString(0xff & hash[i]);
-                if (hex.length() == 1) hexString.append('0');
-                hexString.append(hex);
-            }
-            if (hexString.toString().startsWith(target)) {
-                StringBuffer hexNonce = new StringBuffer();
-                for (int i = 0; i < nonceByte.length; i++) {
-                    String hex = Integer.toHexString(0xff & nonceByte[i]);
-                    if (hex.length() == 1) hexNonce.append('0');
-                    hexNonce.append(hex);
-                }
-                nonceFound = hexNonce.toString();
-                System.out.println("hexNonce.toString : "+hexNonce.toString());
-                hashFound = hexString.toString();
-                System.out.println("Nonce found: " + nonceFound);
-                System.out.println("Hash found: " + hashFound);
-                return;
-            }
-            System.out.println("le nonce sense s'incrementer "+nonce);
-            nonce += increment;
+        StringBuffer hexRes = new StringBuffer();
+        for (int i = 0; i < tabBytes.length; i++) {
+            String hex = Integer.toHexString(0xff & tabBytes[i]);
+            if (hex.length() == 1) hexRes.append('0');
+            hexRes.append(hex);
         }
+        return hexRes.toString();
+    };// new StringBuffer();
+
+
+    public static void mineBlock(int difficulty, int increment, int nonce, String payload) {
+        System.out.println("Just to be sure : increment = "+increment+" et start = "+nonce);
+        try {
+            String target = new String(new char[difficulty]).replace('\0', '0'); // Create a string with difficulty * "0"
+            byte[] dataByte = payload.getBytes(StandardCharsets.UTF_8);
+            int dataByteLength = dataByte.length;
+            byte[] byteFullData = new byte[dataByteLength + 4];
+            System.arraycopy(dataByte, 0, byteFullData, 0, dataByteLength);
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+
+            while(true) {
+
+                byte[] nonceByte = ByteBuffer.allocate(4).putInt(nonce).array();
+                System.arraycopy(nonceByte, 0, byteFullData,dataByteLength, nonceByte.length);
+                byte[] hash = digest.digest(byteFullData);
+
+                String hexString = convertByteToHexaString(hash);// new StringBuffer();
+
+                if (hexString.startsWith(target)) {
+                    nonceFound = convertByteToHexaString(nonceByte);
+                    hashFound = hexString;
+
+                    return;
+                }
+                nonce += increment;
+            }
         }catch(NoSuchAlgorithmException e){
                 e.printStackTrace();
 

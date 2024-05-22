@@ -1,37 +1,25 @@
 package fr.ul.miage.projetReseau;
 
-//Code JavaRush https://javarush.com/fr/groups/posts/fr.654.les-classes-socket-et-serversocket-ou--bonjour-serveur--pouvez-vous-mentendre
 import java.io.*;
-//import java.net.InetAddress;
+
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.URL;
+import java.net.HttpURLConnection;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
-//import java.net.SocketException;
-//import java.security.MessageDigest;
-//import java.util.ArrayList;
-//import java.util.Random;
-//import java.nio.charset.StandardCharsets;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.net.HttpURLConnection;
-//import java.net.ServerSocket;
-//import java.net.Socket;
-import java.net.URL;
-//import org.json.JSONObject;
 
 
-/**
- * La classe Serveur : ici on parle avec l'API web, on obtiens les taches à toruver, on envoie tout ça aux clients
- * Pour l'instant, le serveur peut se connecter avec un unique client
- */
+
 public class Serveur {
 
+    /**
+     * La classe ClientHandler permet de gerer les differents clients qui se connectent au serveur
+     */
     static class ClientHandler extends Thread {
         private Socket clientSocket;
         //private BufferedReader in;
@@ -126,7 +114,7 @@ public class Serveur {
                     System.out.println("----------------------\nOn a gener le travail, pret a l'envoyer : ");
                     try {
                         PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
-                        out.println("NONCE "+start+" "+increment);
+                        out.println("NONCE "+numberOfThread+" "+increment);
                         out.println("PAYLOAD "+data);
                         out.println("SOLVE "+difficulty);
                     }catch(IOException e){
@@ -195,20 +183,40 @@ public class Serveur {
 //    }
 
     public static void main(String[] args) {
-        int numberOfClients = 3;
-        //difficulty = 3;
+        int numberOfClients = 1; // Par défaut, 1 client
+        int chosenDifficulty = 0;
 
-        // Vérifier s'il y a des arguments et les traiter
-        if (args.length == 2 && args[0].equals("-n")) {
-            try {
-                numberOfClients = Integer.parseInt(args[1]);
-            } catch (NumberFormatException e) {
-                System.err.println("Nombre de clients spécifié incorrect.");
+        // Vérifier les arguments de la ligne de commande
+        for (int i = 0; i < args.length; i++) {
+            if (args[i].equals("-d") && i + 1 < args.length) {
+                try {
+                    chosenDifficulty = Integer.parseInt(args[i + 1]);
+                } catch (NumberFormatException e) {
+                    System.err.println("Difficulté spécifiée incorrecte.");
+                    System.exit(1);
+                }
+                i++;
+            } else if (args[i].equals("-n") && i + 1 < args.length) {
+                try {
+                    numberOfClients = Integer.parseInt(args[i + 1]);
+                } catch (NumberFormatException e) {
+                    System.err.println("Nombre de clients spécifié incorrect.");
+                    System.exit(1);
+                }
+                i++;
+            } else {
+                System.err.println("Utilisation : java Serveur -d <difficulté> [-n <nombre_de_clients>]");
                 System.exit(1);
             }
         }
-
         increment = numberOfClients;
+
+        if (chosenDifficulty == 0) {
+            System.err.println("Vous devez spécifier une difficulté avec l'option -d.");
+            System.exit(1);
+        }
+        difficulty = chosenDifficulty;
+
         try {
             ServerSocket serverSocket = new ServerSocket(1337);
             List<ClientHandler> clientHandlers = new ArrayList<>();
@@ -295,8 +303,8 @@ public class Serveur {
         //données au hasard pour pouvoir tester le code.
         data = "def";
         start = 0;
-        difficulty = 2;
-        increment = 1;
+        //difficulty = 2;
+        //increment = 1;
 
 
 
@@ -328,7 +336,8 @@ public class Serveur {
     public static boolean validate_work(String hash, int difficulty, String nonce) {
 
         String urlString = "https://projet-raizo-idmc.netlify.app/.netlify/functions/validate_work";
-        String requestBody = String.format("{\"d\":%d,\"n\":\"%d\",\"h\":\"%s\"}", difficulty, nonce, hash);
+        //String requestBody = String.format("{\"d\":%d,\"n\":\"%d\",\"h\":\"%s\"}", difficulty, nonce, hash);
+        String requestBody = String.format("{\"d\":%d,\"n\":\"%s\",\"h\":\"%s\"}", difficulty, nonce, hash);
 
 
         try {
