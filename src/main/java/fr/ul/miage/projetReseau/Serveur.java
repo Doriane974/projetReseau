@@ -52,6 +52,7 @@ public class Serveur {
                     PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
 
                     String messageCLient = in.readLine();
+                    System.out.println(messageCLient);
                     String messageARepondre = ecouteClient(processMessageClient(messageCLient));
                     if ((messageARepondre!=null) && (messageARepondre != "")) {
                         out.println(messageARepondre);
@@ -122,6 +123,7 @@ public class Serveur {
                     break;
                 case "READY":
                     generate_work(); // Est ce que on les fait tout de suite ou pas les SOLVE/PAYLOAD/NONCE ??
+                    System.out.println("----------------------\nOn a gener le travail, pret a l'envoyer : ");
                     try {
                         PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
                         out.println("NONCE "+start+" "+increment);
@@ -132,9 +134,10 @@ public class Serveur {
                     }
                     break;
                 case "FOUND":
+                    System.out.println("FOUND SOMETHING !!!");
                     if(messageClientTab.length==3){
-                        hashRes = Integer.parseInt(messageClientTab[1]);
-                        nonceRes = Integer.parseInt(messageClientTab[2]);
+                        hashRes = messageClientTab[1];
+                        nonceRes = messageClientTab[2];
                         if(validate_work(String.valueOf(hashRes),difficulty, nonceRes)){
                             messageARepondre = "SOLVED";
                         };
@@ -153,8 +156,8 @@ public class Serveur {
     }
     private static String data = "";
     private static int start = 0;
-    private static int hashRes = 0;
-    private static int nonceRes = 0;
+    private static String hashRes = "";
+    private static String nonceRes = "";
     private static int increment = 0;
     private static int difficulty = 0;
     private static boolean envoieProgress = false;
@@ -291,9 +294,9 @@ public class Serveur {
     public static void generate_work() {
         //données au hasard pour pouvoir tester le code.
         data = "def";
-        start = 78910;
-        difficulty = 3;
-        increment = 2;
+        start = 0;
+        difficulty = 2;
+        increment = 1;
 
 
 
@@ -322,7 +325,7 @@ public class Serveur {
         }
     }
 
-    public static boolean validate_work(String hash, int difficulty, int nonce) {
+    public static boolean validate_work(String hash, int difficulty, String nonce) {
 
         String urlString = "https://projet-raizo-idmc.netlify.app/.netlify/functions/validate_work";
         String requestBody = String.format("{\"d\":%d,\"n\":\"%d\",\"h\":\"%s\"}", difficulty, nonce, hash);
