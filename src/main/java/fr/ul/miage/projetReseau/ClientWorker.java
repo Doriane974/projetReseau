@@ -5,6 +5,7 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.nio.ByteBuffer;
+import java.sql.SQLOutput;
 
 public class ClientWorker {
 
@@ -31,6 +32,10 @@ public class ClientWorker {
     public static String hashFound;
     public static String nonceFound;
 
+    public static final String ANSI_RESET = "\u001B[0m";
+    public static final String ANSI_RED = "\u001B[31m";
+    public static final String ANSI_GREEN = "\u001B[32m";
+    public static final String ANSI_BLUE = "\u001B[0;34m";
 
     static class Miner implements Runnable {
         public Miner() { }
@@ -40,7 +45,7 @@ public class ClientWorker {
             mineBlock(difficulty, increment, start, data);
             try {
                 PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-                out.println("FOUND "+ hashFound + " " + nonceFound);
+                out.println(ANSI_BLUE + "FOUND " + ANSI_RESET + hashFound + " " + nonceFound);
             }catch (IOException e){
                 e.printStackTrace();
             }
@@ -50,19 +55,24 @@ public class ClientWorker {
 
     public static void main(String[] args) {
         try {
+            System.out.println(ANSI_BLUE + "-------------------------");
+            System.out.println("      CLIENT WORKER         ");
+            System.out.println("-------------------------" + ANSI_RESET + "\n");
             socket = new Socket(SERVER_ADDRESS, SERVER_PORT);
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
 
 
             while(true) {//fonction a faire ici
+                System.out.println(ANSI_BLUE + "         Serveur         ");
+                System.out.println("-------------------------" + ANSI_RESET + "\n");
 
                 while (!enlighten) {
                     String messageServeur = in.readLine();
+                    System.out.println(messageServeur);
                     String messageARepondre = ecouteServeur(processServeurCommand(messageServeur), null);
-                    //System.out.println("messageARepondre = " +messageARepondre);
-                    //if ((messageARepondre != "") && (messageARepondre != null)) {
-                    if ((messageARepondre != null) && !messageARepondre.equals("")) {
+
+                    if ((messageARepondre != null) && !messageARepondre.isEmpty()) {
                         out.println(messageARepondre);
                     }
                 }
@@ -71,9 +81,10 @@ public class ClientWorker {
                 Thread miningThread = new Thread(miner);
                 miningThread.start();
 
-                System.out.println("Mining started. Send CANCELLED to stop the miner.");
+                System.out.println("Mining started. Send" + ANSI_RED + " CANCELLED" +  ANSI_RESET + " to stop the miner.");
                 while (working) {
                     String messageServeur = in.readLine();
+                    System.out.println(messageServeur);
                     String messageARepondre = ecouteServeur(processServeurCommand(messageServeur), miningThread);
 
                     if ((messageARepondre != null) && (!messageARepondre.equals(""))) {
@@ -83,10 +94,6 @@ public class ClientWorker {
             }
 
 
-
-            //while(true){//voir comment quitter la boucle
-
-            //}
 
         }catch(IOException e){
             e.printStackTrace();
@@ -101,21 +108,22 @@ public class ClientWorker {
                 break;
             case "GIMME_PASSWORD":
                 reponse = "PASSWD "+getPassword();
+                //    reponse = "PASSWD "+ "test"; // test to check case "YOU_DONT_FOOL_ME
                 break;
             case "OK":
                 //On a rien a faire dans ce cas, on laisse la chaine reponse vide
                 break;
 
             case "YOU_DONT_FOOL_ME":
-                reponse = "quit"; //TODO : fermer la connexion
-//                try {
-//                    socket.close();
-//                }catch (IOException e){
-//                    System.out.println("Error when you dont fool me received");
-//                }
-//                //reponse = null;//il faut fermer la connextion
-                //changer detat
-                break;
+                try {
+                    socket.close();
+                    System.out.println("Connection closed due to authentication failure.");
+                    return "quit";
+                } catch (IOException e) {
+                    System.err.println("Error when trying to close the socket: " + e.getMessage());
+                    return "error";
+                }
+
             case "SOLVED":
             case "HELLO_YOU" :
                 reponse = "READY";
@@ -154,6 +162,7 @@ public class ClientWorker {
                     verifyReceivings();
                 }
                 break;
+
             default:
                 break;
         }
@@ -213,7 +222,7 @@ public class ClientWorker {
                 nonce += increment;
             }
         }catch(NoSuchAlgorithmException e){
-                e.printStackTrace();
+            e.printStackTrace();
 
         }
     }
