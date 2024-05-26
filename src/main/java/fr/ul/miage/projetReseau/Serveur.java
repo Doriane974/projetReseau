@@ -122,9 +122,9 @@ public class Serveur {
 
                     try {
                         PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
-                        out.println("\n" + ANSI_BLUE + "NONCE " + ANSI_RESET +   numberOfThread + " " + increment);
-                        out.println(ANSI_BLUE + "PAYLOAD "+ ANSI_RESET +    data);
-                        out.println(ANSI_BLUE + "SOLVE "+ ANSI_RESET +    difficulty);
+                        out.println("NONCE " + numberOfThread + " " + increment);
+                        out.println("PAYLOAD " +    data);
+                        out.println("SOLVE " +    difficulty);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -238,9 +238,7 @@ public class Serveur {
                 ch.start();
                 ch.sendWhoAreYou();
             }
-
-            // Start a separate thread to listen for user commands
-            new Thread(() -> listenForCommands()).start();
+            listenForCommands();
 
         } catch (IOException e) {
             e.printStackTrace();

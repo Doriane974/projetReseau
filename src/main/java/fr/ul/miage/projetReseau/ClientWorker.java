@@ -70,7 +70,7 @@ public class ClientWorker {
                 while (!enlighten) {
                     String messageServeur = in.readLine();
                     System.out.println(messageServeur);
-                    String messageARepondre = ecouteServeur(processServeurCommand(messageServeur), null);
+                    String messageARepondre = listenServer(processServeurCommand(messageServeur), null);
 
                     if ((messageARepondre != null) && !messageARepondre.isEmpty()) {
                         out.println(messageARepondre);
@@ -85,7 +85,7 @@ public class ClientWorker {
                 while (working) {
                     String messageServeur = in.readLine();
                     System.out.println(messageServeur);
-                    String messageARepondre = ecouteServeur(processServeurCommand(messageServeur), miningThread);
+                    String messageARepondre = listenServer(processServeurCommand(messageServeur), miningThread);
 
                     if ((messageARepondre != null) && (!messageARepondre.equals(""))) {
                         out.println(messageARepondre);
@@ -100,15 +100,15 @@ public class ClientWorker {
         }
     }
 
-    public static String ecouteServeur(String[] serveurArgs, Thread miningThread){
-        String reponse = "";
+    public static String listenServer(String[] serveurArgs, Thread miningThread){
+        String response = "";
         switch(serveurArgs[0]){
             case "WHO_ARE_YOU_?":
-                reponse = "ITS_ME";
+                response = "ITS_ME";
                 break;
             case "GIMME_PASSWORD":
-                reponse = "PASSWD "+getPassword();
-                //    reponse = "PASSWD "+ "test"; // test to check case "YOU_DONT_FOOL_ME
+                response = "PASSWD "+getPassword();
+
                 break;
             case "OK":
                 //On a rien a faire dans ce cas, on laisse la chaine reponse vide
@@ -126,19 +126,17 @@ public class ClientWorker {
 
             case "SOLVED":
             case "HELLO_YOU" :
-                reponse = "READY";
+                response = "READY";
                 break;
             case "PROGRESS":
-                reponse = working ? "TESTING":"NOPE";
+                response = working ? "TESTING":"NOPE";
                 break;
             case "CANCELLED":
                 if(miningThread!=null) {
                     miningThread.interrupt();
                 }
-                reponse = "READY";
+                response = "READY";
                 enlighten = false;
-                //changer detat
-                //arreter le thread
                 break;
             case "NONCE":
                 if(serveurArgs.length==3){
@@ -166,8 +164,7 @@ public class ClientWorker {
             default:
                 break;
         }
-        //System.out.println("Client : "+reponse);
-        return reponse;
+        return response;
     }
 
     static public void verifyReceivings(){
