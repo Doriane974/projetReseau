@@ -226,7 +226,8 @@ public class Serveur {
 
             while (clientHandlers.size() < numberOfClients) {
                 Socket clientSocket = serverSocket.accept();
-                System.out.println(ANSI_BLUE + "Client connected: "+ ANSI_RESET + clientSocket + "\n");
+                System.out.println(ANSI_BLUE + "Client connected: "+ ANSI_RESET + clientSocket);
+                System.out.println("Waiting for "+(numberOfClients-clientHandlers.size()-1)+" more client(s)\n");
                 ClientHandler clientHandler = new ClientHandler(clientSocket, clientHandlers.size());
                 clientHandlers.add(clientHandler);
             }
@@ -267,8 +268,7 @@ public class Serveur {
                 System.out.print(ANSI_BLUE + "Enter new difficulty: " + ANSI_RESET);
                 String newDifficulty = scanner.nextLine();
                 try {
-                    int diff = Integer.parseInt(newDifficulty);
-                    difficulty = diff;
+                    difficulty = Integer.parseInt(newDifficulty);
                     clientHandlers.forEach(ClientHandler::restartClient);
                 } catch (NumberFormatException e) {
                     System.out.println(ANSI_RED + "Invalid difficulty format." + ANSI_RESET);
@@ -415,7 +415,7 @@ public class Serveur {
             }
 
         } catch (Exception e) {
-            System.err.println(ANSI_RED + "Error making POST request: " + ANSI_RESET + requestBody);;
+            System.err.println(ANSI_RED + "Error making POST request: " + ANSI_RESET + requestBody);
             System.err.println("Exception Message: " + e.getMessage());
         }
 

@@ -5,7 +5,6 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.nio.ByteBuffer;
-import java.sql.SQLOutput;
 
 public class ClientWorker {
 
@@ -34,7 +33,6 @@ public class ClientWorker {
 
     public static final String ANSI_RESET = "\u001B[0m";
     public static final String ANSI_RED = "\u001B[31m";
-    public static final String ANSI_GREEN = "\u001B[32m";
     public static final String ANSI_BLUE = "\u001B[0;34m";
 
     static class Miner implements Runnable {
