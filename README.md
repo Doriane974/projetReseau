@@ -16,7 +16,7 @@ Regarding the server execution:
   
 For example, if you enter the command **java Serveur.java -d 6 -n 4** in your terminal, the server will wait for 4 clients to connect, and then it will send a task of difficulty 4 to all connected clients.
 
-### Executing witg jar
+### Executing with jar
 Using the jars available here : https://filesender.renater.fr/?s=download&token=567cd68c-e69d-404e-be6d-e87e0a2740fe, you can execute directly our main classes.
 * For the clients : java -jar [path of Client.jar]
 * Currently, using jar of Server doesn't work, because of the options you have to specify. I recommend you using the precedent method, except if you know how to using options with jar : java -jar [path of Serveur.jar] -d 12 -n 3
